@@ -20,7 +20,8 @@ export const GoogleLogin = () => {
   auth.onAuthStateChanged((user) => {
     if(user) {
       const profileDoc = doc(collection(firestore, 'profiles'), user.uid)
-      setDoc(profileDoc, { uid: user.uid, accessToken: user.accessToken })
+      console.log(user)
+      setDoc(profileDoc, { uid: user.uid, accessToken: user.accessToken, idToken: user.idToken })
     }
   })
 
