@@ -11,6 +11,13 @@
 !.yarn/sdks
 !.yarn/versions
 
+functions/.yarn/*
+!functions/.yarn/patches
+!functions/.yarn/plugins
+!functions/.yarn/releases
+!functions/.yarn/sdks
+!functions/.yarn/versions
+
 .env
 
 .firebase
