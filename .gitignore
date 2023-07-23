@@ -11,6 +11,9 @@
 !.yarn/sdks
 !.yarn/versions
 
+.env
+
+.firebase
 
 # testing
 /coverage
