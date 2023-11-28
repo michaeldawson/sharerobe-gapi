@@ -14,41 +14,51 @@ const SCOPES = [
 
 export const GoogleLogin = () => {
   const [user, setUser] = useState(null);
+  const [cred, setCred] = useState(null);
   const auth = useAuth();
   const firestore = useFirestore();
-
-  auth.onAuthStateChanged((user) => {
-    if(user) {
-      const profileDoc = doc(collection(firestore, 'profiles'), user.uid)
-      console.log(user)
-      setDoc(profileDoc, { uid: user.uid, accessToken: user.accessToken, idToken: user.idToken })
-    }
-  })
+  const [firebaseUser, setFirebaseUser] = useState(null);
 
   useEffect(() => {
-    const setAuth2 = async () => {
+    auth.onAuthStateChanged(setFirebaseUser);
+  }, [auth])
+
+  useEffect(() => {
+    if (firebaseUser && cred) {
+      const profileDoc = doc(collection(firestore, "profiles"), firebaseUser.uid);
+      setDoc(profileDoc, {
+        uid: firebaseUser.uid,
+        accessToken: cred.accessToken,
+        idToken: cred.idToken,
+      });
+    }
+  }, [firebaseUser, JSON.stringify(cred)]);
+
+  useEffect(() => {
+    (async () => {
       const auth2 = await loadAuth2(
         gapi,
         process.env.REACT_APP_CLIENT_ID,
         SCOPES
       );
+
       if (auth2.isSignedIn.get()) {
         const user = auth2.currentUser.get();
         updateUser(user);
-        const {id_token, access_token} = user.getAuthResponse(true);
-        const credential = GoogleAuthProvider.credential(id_token, access_token)
-
-        signInWithCredential(auth, credential);
+        const { id_token, access_token } = user.getAuthResponse(true);
+        const credential = GoogleAuthProvider.credential(
+          id_token,
+          access_token
+        );
+        setCred(credential);
+        signInWithCredential(auth, credential)
       } else {
         attachSignin(document.getElementById("customBtn"), auth2);
       }
-    };
-    setAuth2();
+    })();
   }, []);
 
   useEffect(() => {
-    // window.gapi = gapi;
-    // window.client = gapi.client.gmail
     if (!user) {
       const setAuth2 = async () => {
         const auth2 = await loadAuth2(
@@ -59,16 +69,6 @@ export const GoogleLogin = () => {
         attachSignin(document.getElementById("customBtn"), auth2);
       };
       setAuth2();
-    } else {
-
-      // .gmail
-      //   .then((response) => {
-      //     console.log('Google Analytics request successful!')
-      //     if (response.result.items && response.result.items.length) {
-      //       const accountNames = response.result.items.map(account => account.name)
-      //       alert('Google Analytics account names: ' + accountNames.join(' '))
-      //     }
-      //   })
     }
   }, [user]);
 

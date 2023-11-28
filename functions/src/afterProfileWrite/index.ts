@@ -1,10 +1,7 @@
 import * as functions from "firebase-functions";
 
-("use strict");
-
-import { google } from "googleapis";
-
-const oauth2Client = new google.auth.OAuth2();
+import admin, { firestore } from "../utils/admin";
+import { getGmailMessages } from "./getGmailMessages";
 
 export const afterProfileWrite = functions
   .runWith({ memory: "512MB" })
@@ -15,21 +12,31 @@ export const afterProfileWrite = functions
 
     if (!profile) return; // We're deleting, bail out
 
-    // Set the access token
-    oauth2Client.setCredentials({
+    const credentials = {
+      id_token: profile.idToken,
       access_token: profile.accessToken,
+    };
+
+    const { messages } = await getGmailMessages(credentials);
+
+    // Now, create a message document for each message in the list
+    const batch = firestore.batch();
+
+    const timestamp = admin.firestore.FieldValue.serverTimestamp();
+
+    messages!.forEach((message) => {
+      batch.set(
+        firestore.doc(`messages/${message.id}`),
+        {
+          uid: profile.uid,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          message,
+          credentials,
+        },
+        { merge: true }
+      );
     });
 
-    // Create the Gmail API client
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-    google.options({ auth: profile.accessToken });
-
-    const messages = await gmail.users.messages.list({
-      userId: "me",
-      q: "subject: order",
-      maxResults: 100,
-    });
-
-    console.log({ messages });
+    return batch.commit();
   });
